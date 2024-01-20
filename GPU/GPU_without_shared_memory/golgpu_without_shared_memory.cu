@@ -171,8 +171,8 @@ void GameOfLifeGPU(int n, int stepLimit) {
         delete[] h_outputImage;
     }
 
+    cudaDeviceSynchronize();
     cudaFree(d_Image);
     cudaFree(d_outputImage);
 
-    cudaDeviceSynchronize();
 }
