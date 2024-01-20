@@ -32,8 +32,6 @@ int main(int argc, char *argv[]) {
 
     FreeMemory(imgSize);
 
-    //MPI_Finalize();
-
     return 0;
 }
 
