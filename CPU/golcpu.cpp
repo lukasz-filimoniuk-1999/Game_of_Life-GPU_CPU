@@ -138,7 +138,7 @@ void GameOfLifeCPU(int n, int stepLimit) {
         }
 
         // char stepFileName[20];
-        // sprintf(stepFileName, "%dstep.ppm", step);
+        // sprintf(stepFileName, "%dstep.pgm", step);
         // WritePGM(stepFileName, n, actualIndex);
     }
 }
