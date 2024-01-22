@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
 
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-    printf("Execution time: %ld msecs\n", duration.count());
+    printf("Execution time: %d msecs\n", duration.count());
 
     WritePGM("final.pgm", imgSize, (stepLimit-1)%2);
 
@@ -95,7 +95,7 @@ void WritePGM(const char *fname, int n, int index) {
     fclose(file);
 }
 
-__global__ void GOLKernel(int* d_In, int* d_Out, int n) {
+__global__ void GOLKernel(int* d_In, int* d_Out, int n, int stepLimit) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
     int idx = i * n + j;
@@ -147,31 +147,35 @@ void GameOfLifeGPU(int n, int stepLimit) {
         int* h_Image = new int[n * n];
         int* h_outputImage = new int[n * n];
 
-        for (int i = 0; i < n; i++) {
-            cudaMemcpy(h_Image + i * n, Image[prevIndex][i], n * sizeof(int), cudaMemcpyHostToHost);
-        }
+        if (step == 1) {
+            for (int i = 0; i < n; i++) {
+                cudaMemcpy(h_Image + i * n, Image[prevIndex][i], n * sizeof(int), cudaMemcpyHostToHost);
+            }
 
-        cudaMemcpy(d_Image, h_Image, n * n * sizeof(int), cudaMemcpyHostToDevice);
+            cudaMemcpy(d_Image, h_Image, n * n * sizeof(int), cudaMemcpyHostToDevice);
+        } else {
+            cudaMemcpy (d_Image, d_outputImage, n * n * sizeof(int), cudaMemcpyDeviceToDevice);
+        }
 
         delete[] h_Image;
 
         dim3 blockSize(16, 16);
         dim3 gridSize((n + blockSize.x - 1) / blockSize.x, (n + blockSize.y - 1) / blockSize.y);
 
-        GOLKernel <<<gridSize, blockSize>>> (d_Image, d_outputImage, n);
+        GOLKernel <<<gridSize, blockSize>>> (d_Image, d_outputImage, n, stepLimit);
+        if (step == stepLimit-1) {
+            cudaMemcpy(h_outputImage, d_outputImage, n * n * sizeof(int), cudaMemcpyDeviceToHost);
 
-        cudaMemcpy(h_outputImage, d_outputImage, n * n * sizeof(int), cudaMemcpyDeviceToHost);
-
-        for (int i = 0; i < n; ++i) {
-            cudaMemcpy(Image[actualIndex][i], h_outputImage + i * n, n * sizeof(int), cudaMemcpyHostToHost);
+            for (int i = 0; i < n; ++i) {
+                cudaMemcpy(Image[actualIndex][i], h_outputImage + i * n, n * sizeof(int), cudaMemcpyHostToHost);
+            }
         }
         
         delete[] h_outputImage;
     }
 
-    cudaDeviceSynchronize();
-
     cudaFree(d_Image);
     cudaFree(d_outputImage);
 
+    cudaDeviceSynchronize();
 }
