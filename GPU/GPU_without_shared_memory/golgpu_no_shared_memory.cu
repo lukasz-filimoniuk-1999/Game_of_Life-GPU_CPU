@@ -101,8 +101,8 @@ __global__ void GOLKernel(int* d_In, int* d_Out, int n) {
     int idx = i * n + j;
 
     if (i > 0 && i < n - 1 && j > 0 && j < n - 1) {
+        
         int neighbors = 0;
-
         int i_minus_1 = (i - 1) * n;
         int i_plus_1 = (i + 1) * n;
 
